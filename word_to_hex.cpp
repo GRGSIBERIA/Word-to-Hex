@@ -23,15 +23,23 @@ void AssertionWord(int pos) {
 	exit(-1);
 }
 
-char Small() {
-	
-}
-
 char MultiByteWord(char hi, char low) {
+	int pos = 0;
 	if (hi == 0x82 && 0x9f <= low && low <= 0xf1) {
 		/* ひらがな */
+		if (0x9f <= low && low <= 0xa8) {
+			/* ひらがなの母音 */
+			pos = (low - 0x9f) / 2;
+			return pos + ((low % 2) == 1 ? 0xC7 : 0xD1);
+		}
+
 	} else if (hi == 0x83 && 0x40 <= low && low <= 0x96) {
 		/* カタカナ */
+		if (0x40 <= low && low <= 0x49) {
+			/* かたかなの母音 */
+			pos = (low - 0x40) / 2;
+			return pos + ((low % 2) == 0 ? 0x87 : 0x91);
+		}
 	} else if (hi == 0x89 && low == 0x7e) {
 		/* 円だけ例外 */
 		return 5f;
