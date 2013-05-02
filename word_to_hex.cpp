@@ -126,7 +126,7 @@ unsigned char AssignHiraKaku(unsigned char low, int hira=1, char* qualify=NULL) 
 	else if (low == 0x51) {
 		return JWO;	/* を */
 	}
-	return -1;
+	return 0xc0;
 }
 
 #define Pattern(X,Y,Z) else if (hi == X && low == Y) { return Z; }
@@ -154,9 +154,12 @@ unsigned char MultiByteWord(unsigned char hi, unsigned char low, char* qualify=N
 	Pattern(0x81, 0xf4, 0xc5) /* 音符 */
 	Pattern(0x81, 0xa1, 0xc4) /* 四角 */
 	Pattern(0x81, 0x63, 0xfe)	/* …… */
+	Pattern(0x81, 0x40, 0x40) /* 全角空白 */
 
 	return 0xc0;	// なんかおかしいときは-1を返す
 }
+
+#define UL(X,Y) (unsigned char)buffer[i] == X && (unsigned char)buffer[i+1] == Y
 
 char* ProcParse(const char* buffer, int length) {
 	int i;
@@ -172,17 +175,20 @@ char* ProcParse(const char* buffer, int length) {
 		} else if (buffer[i] == '\n') {
 			nametable[cur++] = 0x80;	// 0x80は改行コードなので覚えよう
 
-		} else if ((unsigned char)buffer[i] == 0x21 && (unsigned char)buffer[i+1] == 0x3f) {
+		} else if ((unsigned char)buffer[i] == 0x20) {
+			nametable[cur++] = 0x40;	// 0x40は例外的に空白記号にする
+
+		} else if (UL(0x21,0x3f)) {
 			nametable[cur++] = 0xff;
 			i++;
 
 		} else if (0x20 <= buffer[i] && buffer[i] <= 0x7d) {
 			nametable[cur++] = buffer[i] - 0x20;		/* アルファベット処理 */
 
-		} else if (0x82 <= (unsigned char)buffer[i] && (unsigned char)buffer[i] <= 0x83) {
+		} else if (0x81 <= (unsigned char)buffer[i] && (unsigned char)buffer[i] <= 0x83) {
 			/* 2バイト文字の処理 */
 			nametable[cur] = MultiByteWord((unsigned char)buffer[i], (unsigned char)buffer[i+1], &nametable[cur+1]);
-			if (nametable[cur] == -1) {
+			if ((unsigned char)nametable[cur] == 0xc0) {
 				printf("%02x\n", (unsigned char)buffer[i]);
 				AssertionWord(i);
 			}
@@ -193,6 +199,7 @@ char* ProcParse(const char* buffer, int length) {
 			AssertionWord(i);
 		}
 	}
+
 	return nametable;
 }
 
@@ -273,6 +280,8 @@ void TestStringDaku() {
 	TestStrings("パピプペポ");
 	TestStrings("!?");
 	TestStrings("あいうえおかきくけこさしすせそたちつてとなにぬねの");
+	TestStrings(" a　あ");
+	TestStrings("「あいう」");
 }
 
 void TestHiraKaku() {
