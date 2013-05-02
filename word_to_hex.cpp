@@ -43,13 +43,9 @@ char AssignHiraKaku(unsigned char low, int hira=1) {
 	if (LRANGE(0x7f,0x96)) low--;	/* ミとムの間に空間がある */
 	low -= typesub;		/* 小文字のあからのオフセットに直す */
 
-	printf("..%02x\n", low);
-
 	/* ひらがな */
 	if (LRANGE(0x00,0x09)) {
-		/* あ */
-		printf("...%02x\n", low);
-		return low / 2 + JA;
+		return low / 2 + JA;	/* あ */
 	}
 	else if (LRANGE(0x0a,0x28)) {
 		/* かさた */
@@ -102,15 +98,22 @@ char MultiByteWord(unsigned char hi, unsigned char low) {
 	return -1;	// なんかおかしいときは-1を返す
 }
 
-void ProcParse(char* buffer) {
+char* ProcParse(const char* buffer) {
 	int i;
 	int cur = 0;
 	char* nametable = (char*)malloc(sizeof(buffer));
 	for (i = 0; i < sizeof(buffer); i++) {
-		if (0x20 <= buffer[i] && buffer[i] <= 0x7d) {
+		if (buffer[i] == '\0') {
+			nametable[cur] = 0;
+			break;
+
+		} else if (buffer[i] == '\n') {
+			continue;
+
+		} else if (0x20 <= buffer[i] && buffer[i] <= 0x7d) {
 			/* アルファベット処理 */
-			nametable[cur] -= 20;
-			cur++;
+			nametable[cur++] = buffer[i] - 0x20;
+
 		} else if (0x81 <= buffer[i] && buffer[i] <= 0x9f) {
 			/* 2バイト文字の処理 */
 			nametable[cur] = MultiByteWord((unsigned char)buffer[i], (unsigned char)buffer[++i]);
@@ -121,6 +124,7 @@ void ProcParse(char* buffer) {
 			AssertionWord(i);
 		}
 	}
+	return nametable;
 }
 
 // メイン処理，　ファイルの読み込み等から
@@ -162,11 +166,10 @@ int main(int argc, char* argv[]) {
 
 void MTest(const char* test, unsigned char answer) {
 	unsigned char r = (unsigned char)MultiByteWord((unsigned char)test[0], (unsigned char)test[1]);
-	printf("%02x, %02x\n", r, answer);
 	assert(r == answer);
 }
 
-int main(int argc, char* argv[]) {
+void TestHiraKaku() {
 	MTest("ア", 0x91);
 	MTest("イ", 0x92);
 	MTest("ウ", 0x93);
@@ -215,6 +218,20 @@ int main(int argc, char* argv[]) {
 	MTest("ん", 0xfd);
 	MTest("ヲ", 0x86);
 	MTest("を", 0xc6);
+	MTest("円", 0x5f);
+}
+
+int main(int argc, char* argv[]) {
+	char* result;
+	int i;
+	TestHiraKaku();
+
+	printf("test\n");
+	result = ProcParse("!#abc");
+	for (i = 0; i < sizeof(result); i++) {
+		printf("%02x\n", (unsigned char)result[i]);
+	}
+	free(result);
 	return 0;
 }
 
