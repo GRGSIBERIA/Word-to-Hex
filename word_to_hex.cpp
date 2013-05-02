@@ -71,17 +71,16 @@ char AssignHiraKaku(unsigned char low, int hira=1) {
 		return (low - 0x2e) / 3 + JH;	/* ÇÕ */
 	}
 	else if (LRANGE(0x42,0x48)) {
-		low = (low - 0x42) / 2;
-		return low; /* Ç‚ */
+		return low / 2 + JY - 0x21; /* Ç‚ */
 	}
-	else if (low == 0x4f) {
+	else if (low == 0x4e) {
 		return JWA;	/* ÇÌ */
 	}
 	else if (low == 0x52) {
-		return JWO;	/* Ç */
-	}
-	else if (low == 0x53) {
 		return JNN;	/* ÇÒ */
+	}
+	else if (low == 0x51) {
+		return JWO;	/* Ç */
 	}
 	return -1;
 }
@@ -196,6 +195,26 @@ int main(int argc, char* argv[]) {
 	MTest("Çµ", 0xdc);
 	MTest("É`", 0xa1);
 	MTest("Çø", 0xe1);
+	MTest("Éi", 0xa5);
+	MTest("Ç»", 0xe5);
+	MTest("Éj", 0xa6);
+	MTest("Ç…", 0xe6);
+	MTest("Éq", 0xab);
+	MTest("Ç–", 0xeb);
+	MTest("ÉÄ", 0xb1);
+	MTest("Çﬁ", 0xf1);
+	MTest("ÉÑ", 0xb4);
+	MTest("ÉÜ", 0xb5);
+	MTest("Éà", 0xb6);
+	MTest("Ç‚", 0xf4);
+	MTest("Ç‰", 0xf5);
+	MTest("ÇÊ", 0xf6);
+	MTest("Éè", 0xbc);
+	MTest("Éì", 0xbd);
+	MTest("ÇÌ", 0xfc);
+	MTest("ÇÒ", 0xfd);
+	MTest("Éí", 0x86);
+	MTest("Ç", 0xc6);
 	return 0;
 }
 
