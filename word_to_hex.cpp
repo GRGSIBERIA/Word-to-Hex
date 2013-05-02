@@ -16,7 +16,7 @@ size_t FileSize(FILE* fp) {
 char* ReadFile(FILE* fp) {
 	size_t fsize = FileSize(fp);
 	char* buffer = (char*)malloc(fsize);
-	fread(buffer, fsize, fsize, fp);
+	fread(buffer, 1, fsize, fp);
 	return buffer;
 }
 
@@ -204,10 +204,11 @@ char* ProcParse(const char* buffer, int length) {
 }
 
 // メイン処理，　ファイルの読み込み等から
-void MainProc(char* argv) {
+const char* MainProc(char* argv) {
 	int i;
 	char* buffer;
 	size_t fsize;
+	char* strings;
 	FILE* fp = fopen(argv, "r");
 	if (fp == NULL) {
 		printf("ファイルが開けません\n");
@@ -217,23 +218,49 @@ void MainProc(char* argv) {
 	fsize = FileSize(fp);
 	buffer = ReadFile(fp);
 	
-	ProcParse(buffer, strlen(buffer));
+	strings = ProcParse(buffer, strlen(buffer));
+	for (i = 0; i < fsize; i++) {
+		printf("%02x\n", (unsigned char)strings[i]);
+	}
 
 	free(buffer);
 	fclose(fp);
+	return strings;
 }
 
-#define TEST
+size_t GetBinaryLength(const char* binary) {
+	size_t counter = 0;
+	for (; binary[counter] != NULL; counter++);
+	return counter+1;
+}
 
+//#define TEST
 #ifndef TEST
 
 int main(int argc, char* argv[]) {
-	if (argc != 2) {
-		printf("引数はファイル名だけ指定してください\n");
+	const char* binary = 0;
+	FILE* fp;
+	size_t size;
+
+	if (argc > 1) {
+		binary = MainProc(argv[1]);
+	}
+
+	if (argc == 3) {
+		fp = fopen(argv[2], "wb");
+	}
+	else if (argc == 2) {
+		fp = fopen("a.str", "wb");
+	}
+	else {
+		printf("do not match argument.\n");
 		exit(-1);
 	}
 
-	MainProc(argv[1]);
+	size = GetBinaryLength(binary);
+	printf("%d\n", size);
+	fwrite(binary, 1, size, fp);
+	fclose(fp);
 	
 	return 0;
 }
