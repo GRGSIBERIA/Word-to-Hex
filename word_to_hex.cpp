@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 #include <memory.h>
 
 size_t FileSize(FILE* fp) {
@@ -37,14 +38,44 @@ void AssertionWord(int pos) {
 #define JNN		ntoffset + 0x3d
 #define JY		ntoffset + (((low + 2) % 2) == 1 ? 0x34 : 0x0d)
 
-char AssignHiraKaku(unsigned char low, int hira=1, char* qualify=NULL) {
+unsigned char ExceptPattern(unsigned char low, int hira) {
+	switch (low) {
+		case 0x0b:
+			if (hira == 1) return 0x70;	/* が */
+			break;
+
+		case 0x28:
+			if (hira == 0) return 0x71;	/* ド */
+			break;
+
+		case 0x2F:
+			if (hira == 0) return 0x72;	/* バ　*/
+			break;
+
+		case 0x17:
+			if (hira == 1) return 0x73;	/* じ */
+			break;
+
+		case 0x35:
+			if (hira == 1) return 0x74;	/* ぶ */
+			break;
+
+		default:
+			return 0xC0;
+	}
+}
+
+unsigned char AssignHiraKaku(unsigned char low, int hira=1, char* qualify=NULL) {
 	int ntoffset = (hira == 1 ? 0xc0 : 0x80);
 	int typesub = (hira == 1 ? 0x9f : 0x40);	/* ひらカタのテーブル最小値 */
+	unsigned char except_test;
 
 	if (LRANGE(0x7f,0x96)) low--;	/* ミとムの間に空間があるので詰める */
 	low -= typesub;								/* 小文字のあからのオフセットに直す */
 
-	/* ひらがな */
+	except_test = ExceptPattern(low, hira);
+	if (except_test != 0xc0) return except_test;
+
 	if (LRANGE(0x00,0x09)) {
 		return low / 2 + JA;	/* あ */
 	}
@@ -98,8 +129,10 @@ char AssignHiraKaku(unsigned char low, int hira=1, char* qualify=NULL) {
 	return -1;
 }
 
+#define Pattern(X,Y,Z) else if (hi == X && low == Y) { return Z; }
+
 /* 濁点は全て無視されるので注意 */
-char MultiByteWord(unsigned char hi, unsigned char low, char* qualify=NULL) {
+unsigned char MultiByteWord(unsigned char hi, unsigned char low, char* qualify=NULL) {
 	int pos = 0;
 	if (hi == 0x82 && LRANGE(0x9f,0xf1)) {
 		return AssignHiraKaku(low, 1, qualify);			/* ひらがな */
@@ -107,31 +140,44 @@ char MultiByteWord(unsigned char hi, unsigned char low, char* qualify=NULL) {
 	} else if (hi == 0x83 && LRANGE(0x40,0x96)) {
 		return AssignHiraKaku(low, 0, qualify);	/* カタカナ */
 
-	} else if (hi == 0x89 && low == 0x7e) {
-		/* 円だけ例外 */
-		return 0x5f;
-	}
+	} 
+	Pattern(0x89, 0x7e, 0x5f)	/* 円 */
+	Pattern(0x81, 0x60, 0xd0)	/* 波 */
+	Pattern(0x81, 0x5b, 0x90)	/* 長音 */
+	Pattern(0x81, 0x40, 0x81)	/* 句点 */
+	Pattern(0x81, 0x41, 0x84) /* 読点 */
+	Pattern(0x81, 0x45, 0x85) /* 中黒 */
+	Pattern(0x81, 0x75, 0x82)	/* 「 */
+	Pattern(0x81, 0x76, 0x83) /* 」 */
+	Pattern(0x81, 0x79, 0xc2)	/* 【 */
+	Pattern(0x81, 0x7a, 0xc3)	/* 】 */
+	Pattern(0x81, 0xf4, 0xc5) /* 音符 */
+	Pattern(0x81, 0xa1, 0xc4) /* 四角 */
+	Pattern(0x81, 0x63, 0xfe)	/* …… */
 
-	return -1;	// なんかおかしいときは-1を返す
+	return 0xc0;	// なんかおかしいときは-1を返す
 }
 
-char* ProcParse(const char* buffer) {
+char* ProcParse(const char* buffer, int length) {
 	int i;
 	int cur = 0;
-	char* nametable = (char*)malloc(sizeof(buffer));
-	memset(nametable, NULL, sizeof(nametable));
+	char* nametable = (char*)malloc(length + 1);
+	memset(nametable, NULL, length + 1);
 
-	for (i = 0; i < sizeof(buffer); i++) {
+	for (i = 0; i < length + 1; i++) {
 		if (buffer[i] == '\0') {
-			nametable[cur] = 0;
+			nametable[cur] = 0x00;
 			break;
 
 		} else if (buffer[i] == '\n') {
-			continue;
+			nametable[cur++] = 0x80;	// 0x80は改行コードなので覚えよう
+
+		} else if ((unsigned char)buffer[i] == 0x21 && (unsigned char)buffer[i+1] == 0x3f) {
+			nametable[cur++] = 0xff;
+			i++;
 
 		} else if (0x20 <= buffer[i] && buffer[i] <= 0x7d) {
-			/* アルファベット処理 */
-			nametable[cur++] = buffer[i] - 0x20;
+			nametable[cur++] = buffer[i] - 0x20;		/* アルファベット処理 */
 
 		} else if (0x82 <= (unsigned char)buffer[i] && (unsigned char)buffer[i] <= 0x83) {
 			/* 2バイト文字の処理 */
@@ -164,7 +210,7 @@ void MainProc(char* argv) {
 	fsize = FileSize(fp);
 	buffer = ReadFile(fp);
 	
-	ProcParse(buffer);
+	ProcParse(buffer, strlen(buffer));
 
 	free(buffer);
 	fclose(fp);
@@ -194,10 +240,11 @@ void MTest(const char* test, unsigned char answer) {
 
 void TestStrings(const char* test) {
 	int i;
+	int terminate = strlen(test);
 	char* result;
-	printf("test\n");
-	result = ProcParse(test);
-	for (i = 0; i < sizeof(result); i++) {
+	printf("test, %d\n", strlen(test));
+	result = ProcParse(test, terminate);
+	for (i = 0; i < terminate; i++) {
 		printf("%02x\n", (unsigned char)result[i]);
 	}
 	free(result);
@@ -224,6 +271,8 @@ void TestStringDaku() {
 	TestStrings("ぱぴぷぺぽ");
 	TestStrings("バビブベボ");
 	TestStrings("パピプペポ");
+	TestStrings("!?");
+	TestStrings("あいうえおかきくけこさしすせそたちつてとなにぬねの");
 }
 
 void TestHiraKaku() {
