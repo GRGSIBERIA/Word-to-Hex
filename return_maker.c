@@ -91,6 +91,32 @@ StringList* BinaryToList(const UCHAR* binary, const size_t size) {
   return list;
 }
 
+#define NVAL(X) ptr->_next->_next->value == X
+
+void InsertReturn(StringList* list, const int return_count) {
+  int word_count = 1;
+  StringNode* ptr;
+  for (ptr = list->_first; ptr != NULL; ptr = ptr->_next) {
+    printf("wc:%d, %02x\n", word_count, ptr->value);
+    if (ptr->value == 0x80) {
+      word_count = 0;   /* 改行があったらリセットする */
+    }
+    else if (word_count >= return_count-2 && ptr->_next != NULL) {
+      if (ptr->_next->_next != NULL) {
+        if (NVAL(0x81) || NVAL(0x82) || NVAL(0x83) || NVAL(0x84) || NVAL(0xbe) || NVAL(0xbf)) {
+          Insert(list, ptr, 0x80);    /* 禁則処理，行頭に来そうな場合， */
+          continue;
+        }
+      }
+    }
+    if (word_count >= return_count) {
+      Insert(list, ptr, 0x80);    /* 通常処理 */
+      continue;
+    }
+    word_count++;
+  }
+}
+
 #define TEST
 #ifndef TEST
 
@@ -100,8 +126,37 @@ int main(int argc, char* argv[]) {
 
 #else
 
-void TestList();
-void TestListByBin(StringList*);
+void AccessListAll(StringList* list) {
+  int i;
+  printf("access list all\n");
+  printf("list size: %d\n", list->count);
+  for (i = 0; i < list->count; i++) {
+    printf("%02x\n", Access(list, i)->value);
+  }
+}
+
+void TestListByBin(StringList* list) {
+  //AccessListAll(list);
+}
+
+void TestList() {
+  StringList* list = NewStringList();
+  int i;
+  StringNode* tmp;
+  
+  Push(list, 0x01);
+  Push(list, 0x01);
+  Push(list, 0x01);
+  Push(list, 0x81);
+  Push(list, 0x01);
+  Push(list, 0x01);
+  Push(list, 0x01);
+  Push(list, 0x01);
+
+  InsertReturn(list, 3);
+  
+  AccessListAll(list);
+}
 
 int main(int argc, char* argv[]) {
   size_t bin_size;
@@ -117,35 +172,6 @@ int main(int argc, char* argv[]) {
   free(binary);
 
   return 0;
-}
-
-void AccessListAll(StringList* list) {
-  int i;
-  printf("access list all\n");
-  printf("list size: %d\n", list->count);
-  for (i = 0; i < list->count; i++) {
-    printf("%02x\n", Access(list, i)->value);
-  }
-}
-
-void TestListByBin(StringList* list) {
-  
-  AccessListAll(list);
-}
-
-void TestList() {
-  StringList* list = NewStringList();
-  int i;
-  StringNode* tmp;
-  
-  Push(list, 0x01);
-  Push(list, 0x02);
-  Push(list, 0x03);
-  Push(list, 0x04);
-  Insert(list, list->_first, 0xFF);
-  Insert(list, list->_last, 0xFF);
-  
-  AccessListAll(list);
 }
 
 #endif
