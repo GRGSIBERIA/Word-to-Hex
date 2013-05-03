@@ -46,6 +46,11 @@ StringNode* NewStringNode() {
   return (StringNode*)malloc(sizeof(StringNode));
 }
 
+void Delete(StringNode* target, StringNode* prev) {
+  prev->_next = target->_next;
+  free(target);
+}
+
 void Push(StringList* list, UCHAR val) {
   if (list->count == 0) {
     list->_first = NewStringNode();
