@@ -122,6 +122,15 @@ void InsertReturn(StringList* list, const int return_count) {
   }
 }
 
+void ClearErrorCode(StringList* list) {
+  StringNode* ptr = list->_first;
+  for (; ptr->_next != NULL; ptr = ptr->_next) {
+    if (ptr->_next->value == 0xc0) {   /* エラーコードの消去 */
+      Delete(ptr->_next, ptr);
+    }
+  }
+}
+
 #define TEST
 #ifndef TEST
 
