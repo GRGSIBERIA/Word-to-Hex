@@ -122,6 +122,8 @@ void InsertReturn(StringList* list, const int return_count) {
   }
 }
 
+/* word_to_hexを実行した直後のエラーコードを除去する */
+/* この関数を実行する前に改ページコードはありえない */
 void ClearErrorCode(StringList* list) {
   StringNode* ptr = list->_first;
   for (; ptr->_next != NULL; ptr = ptr->_next) {
@@ -135,7 +137,7 @@ void ClearErrorCode(StringList* list) {
 #ifndef TEST
 
 int main(int argc, char* argv[]) {
-
+  return 0;
 }
 
 #else
