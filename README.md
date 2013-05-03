@@ -5,18 +5,18 @@ My local program. I need the tool for nes. The tool exchanges word to hexagon by
 
 # Usage
 
-* Compile the word to hex and the return maker.
+1. Compile the word to hex and the return maker.
 
     gcc word_to_hex.c -o wth.exe
     gcc return_maker.c -o rtmk.exe
 
-* Use the word to hex. You'll gives 1st option is required.
+2. Use the word to hex. You'll gives 1st option is required.
 
     wth input_file output_file
 
 You don't gives the 2nd options, default output_file name is 'a.str'.
 
-* You gives to make string file by the word to hex. 1st option is required.
+3. You gives to make string file by the word to hex. 1st option is required.
 
     rtmk input_file output_file
 
