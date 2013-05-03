@@ -133,6 +133,20 @@ void ClearErrorCode(StringList* list) {
   }
 }
 
+/* 改行コードを改ページコードに上書き */
+void OverwritePageSkip(StringList* list, const int skip_number) {
+  int skip_count = 0;
+  StringNode* ptr = list->_first;
+  for (; ptr != NULL; ptr = ptr->_next) {
+    if (ptr->value == 0x80 && skip_count >= skip_number-1) {
+      skip_count = 0;
+      ptr->value = 0xc0;
+      continue;
+    }
+    skip_count++;
+  }
+}
+
 #define TEST
 #ifndef TEST
 
