@@ -13,7 +13,7 @@ size_t FileSize(FILE* fp) {
   return size;
 }
 
-const UCHAR* ReadFile(const char* filename, size_t* bin_size) {
+UCHAR* ReadFile(const char* filename, size_t* bin_size) {
   FILE* fp = fopen(filename, "rb");
   *bin_size = FileSize(fp);
   UCHAR* binary = (UCHAR*)malloc(*bin_size);
@@ -68,6 +68,29 @@ const StringNode* Access(const StringList* list, const int index) {
   return NULL;
 }
 
+void Insert(StringList* list, StringNode* node, UCHAR value) {
+  StringNode* tmp;
+  if (node->_next == NULL) {  /* 末尾に挿入する場合 */
+    node->_next = NewStringNode();
+    list->_last = node->_next;
+    SetStringNode(node->_next, value, NULL);
+  } else {
+    tmp = node->_next;
+    node->_next = NewStringNode();
+    SetStringNode(node->_next, value, tmp);
+  }
+  list->count++;
+}
+
+StringList* BinaryToList(const UCHAR* binary, const size_t size) {
+  StringList* list = NewStringList();
+  size_t i;
+
+  for (i = 0; i < size; i++) Push(list, binary[i]);
+
+  return list;
+}
+
 #define TEST
 #ifndef TEST
 
@@ -78,15 +101,36 @@ int main(int argc, char* argv[]) {
 #else
 
 void TestList();
+void TestListByBin(StringList*);
 
 int main(int argc, char* argv[]) {
   size_t bin_size;
-  const UCHAR* binary;
+  UCHAR* binary;
+  StringList* list;
 
-  //binary = ReadFile(argv[1], &bin_size);
+  binary = ReadFile(argv[1], &bin_size);
+  list = BinaryToList(binary, bin_size);
 
   TestList();
+  TestListByBin(list);
+
+  free(binary);
+
   return 0;
+}
+
+void AccessListAll(StringList* list) {
+  int i;
+  printf("access list all\n");
+  printf("list size: %d\n", list->count);
+  for (i = 0; i < list->count; i++) {
+    printf("%02x\n", Access(list, i)->value);
+  }
+}
+
+void TestListByBin(StringList* list) {
+  
+  AccessListAll(list);
 }
 
 void TestList() {
@@ -98,11 +142,10 @@ void TestList() {
   Push(list, 0x02);
   Push(list, 0x03);
   Push(list, 0x04);
+  Insert(list, list->_first, 0xFF);
+  Insert(list, list->_last, 0xFF);
   
-  for (i = 0; i < 4; i++) {
-    printf("%02x\n", Access(list, i)->value);
-  }
-  
+  AccessListAll(list);
 }
 
 #endif
