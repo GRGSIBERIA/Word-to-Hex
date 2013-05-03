@@ -10,11 +10,9 @@ My local program. I need the tool for nes. The tool exchanges word to hexagon by
     gcc word_to_hex.c -o wth.exe
     gcc return_maker.c -o rtmk.exe
 
-2. Use the word to hex. You'll gives 1st option is required.
+2. Use the word to hex. You'll gives 1st option is required. You don't gives the 2nd options, default output_file name is 'a.str'.
 
     wth input_file output_file
-
-You don't gives the 2nd options, default output_file name is 'a.str'.
 
 3. You gives to make string file by the word to hex. 1st option is required.
 
