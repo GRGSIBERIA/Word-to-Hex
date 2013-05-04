@@ -91,6 +91,15 @@ void Insert(StringList* list, StringNode* node, UCHAR value) {
   list->count++;
 }
 
+void WriteFile(const char* fname, StringList* list) {
+  FILE* fp = fopen(fname, "wb");
+  StringNode* ptr = list->_first;
+  for (; ptr != NULL; ptr = ptr->_next) {
+    fwrite(ptr->value, 1, 1, fp);
+  }
+  fclose(fp);
+}
+
 StringList* BinaryToList(const UCHAR* binary, const size_t size) {
   StringList* list = NewStringList();
   size_t i;
@@ -163,6 +172,25 @@ void OverwritePageSkip(StringList* list, const int skip_number) {
 #ifndef TEST
 
 int main(int argc, char* argv[]) {
+  char *infile, *outfile, *binary;
+  StringList* list;
+  size_t bin_size;
+  int return_number, page_skip_number;
+
+  infile = argv[1];
+  outfile = argv[2];
+  return_number = atoi(argv[3]);
+  page_skip_number = atoi(argv[4]);
+
+  binary = ReadFile(infile, &bin_size);
+  list = BinaryToList(binary, bin_size);
+
+  ClearErrorCode(list);
+  InsertReturn(list, return_number);
+  OverwritePageSkip(list, page_skip_number);
+
+
+
   return 0;
 }
 
