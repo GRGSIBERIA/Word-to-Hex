@@ -48,8 +48,10 @@ StringNode* NewStringNode() {
   return (StringNode*)malloc(sizeof(StringNode));
 }
 
-void Delete(StringNode* target, StringNode* prev) {
-  prev->_next = target->_next;
+void Delete(StringList* list, StringNode* target, StringNode* prev) {
+  list->count--;
+  if (prev != NULL)
+    prev->_next = target->_next;
   free(target);
 }
 
@@ -128,9 +130,14 @@ void InsertReturn(StringList* list, const int return_count) {
 /* この関数を実行する前に改ページコードはありえない */
 void ClearErrorCode(StringList* list) {
   StringNode* ptr = list->_first;
+  if (ptr->value == 0xc0) {
+    list->_first = ptr->_next;
+    Delete(list, ptr, NULL);
+    ptr = list->_first;
+  }
   for (; ptr->_next != NULL; ptr = ptr->_next) {
     if (ptr->_next->value == 0xc0) {   /* エラーコードの消去 */
-      Delete(ptr->_next, ptr);
+      Delete(list, ptr->_next, ptr);
     }
   }
 }
@@ -179,17 +186,19 @@ void TestList() {
   int i;
   StringNode* tmp;
   
-  Push(list, 0x80);
-  Push(list, 0x80);
-  Push(list, 0x80);
-  Push(list, 0x80);
-  Push(list, 0x80);
-  Push(list, 0x80);
-  Push(list, 0x80);
-  Push(list, 0x80);
+  Push(list, 0xc0);
+  Push(list, 0x01);
+  Push(list, 0xc0);
+  Push(list, 0x01);
+  Push(list, 0xc0);
+  Push(list, 0x01);
+  Push(list, 0xc0);
+  Push(list, 0x01);
+  for (i = 0; i < 20; i++)
+    Push(list, 0x01);
 
-  //ClearErrorCode(list);
-  //InsertReturn(list, 3);
+  ClearErrorCode(list);
+  InsertReturn(list, 3);
   OverwritePageSkip(list, 3);
   
   AccessListAll(list);
