@@ -177,6 +177,8 @@ int main(int argc, char* argv[]) {
   size_t bin_size;
   int return_number, page_skip_number;
 
+  if (argc < 5) return -1;
+
   infile = argv[1];
   outfile = argv[2];
   return_number = atoi(argv[3]);
@@ -189,7 +191,7 @@ int main(int argc, char* argv[]) {
   InsertReturn(list, return_number);
   OverwritePageSkip(list, page_skip_number);
 
-
+  WriteFile(outfile, list);
 
   return 0;
 }
