@@ -39,7 +39,9 @@ void SetStringNode(StringNode* node, UCHAR value, StringNode* next) {
 }
 
 StringList* NewStringList() {
-  return (StringList*)malloc(sizeof(StringList)); 
+  StringList* list = (StringList*)malloc(sizeof(StringList));
+  list->count = 0;
+  return list;
 }
 
 StringNode* NewStringNode() {
@@ -138,12 +140,15 @@ void OverwritePageSkip(StringList* list, const int skip_number) {
   int skip_count = 0;
   StringNode* ptr = list->_first;
   for (; ptr != NULL; ptr = ptr->_next) {
-    if (ptr->value == 0x80 && skip_count >= skip_number-1) {
-      skip_count = 0;
-      ptr->value = 0xc0;
-      continue;
+    if (ptr->value == 0x80) {
+      if (skip_count >= skip_number-1) {
+        skip_count = 0;
+        ptr->value = 0xc0;
+        continue;
+      } else {
+        skip_count++;
+      }
     }
-    skip_count++;
   }
 }
 
@@ -174,16 +179,18 @@ void TestList() {
   int i;
   StringNode* tmp;
   
-  Push(list, 0x01);
-  Push(list, 0x01);
-  Push(list, 0x01);
-  Push(list, 0x81);
-  Push(list, 0x01);
-  Push(list, 0x01);
-  Push(list, 0x01);
-  Push(list, 0x01);
+  Push(list, 0x80);
+  Push(list, 0x80);
+  Push(list, 0x80);
+  Push(list, 0x80);
+  Push(list, 0x80);
+  Push(list, 0x80);
+  Push(list, 0x80);
+  Push(list, 0x80);
 
-  InsertReturn(list, 3);
+  //ClearErrorCode(list);
+  //InsertReturn(list, 3);
+  OverwritePageSkip(list, 3);
   
   AccessListAll(list);
 }
@@ -193,13 +200,13 @@ int main(int argc, char* argv[]) {
   UCHAR* binary;
   StringList* list;
 
-  binary = ReadFile(argv[1], &bin_size);
-  list = BinaryToList(binary, bin_size);
+  //binary = ReadFile(argv[1], &bin_size);
+  //list = BinaryToList(binary, bin_size);
 
   TestList();
-  TestListByBin(list);
+  //TestListByBin(list);
 
-  free(binary);
+  //free(binary);
 
   return 0;
 }
