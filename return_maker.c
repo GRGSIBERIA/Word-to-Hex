@@ -177,7 +177,7 @@ int main(int argc, char* argv[]) {
   size_t bin_size;
   int return_number, page_skip_number;
 
-  if (argc < 5) return -1;
+  if (argc != 5) return -1;
 
   infile = argv[1];
   outfile = argv[2];
